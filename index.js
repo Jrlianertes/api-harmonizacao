@@ -7,7 +7,9 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
+// =============================
 // 🔑 SUPABASE
+// =============================
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
@@ -21,10 +23,12 @@ app.post('/harmonizar', async (req, res) => {
     const { user_id, prato } = req.body;
 
     if (!user_id || !prato) {
-      return res.status(400).json({ erro: "Dados incompletos" });
+      return res.status(400).json({
+        erro: "Dados incompletos"
+      });
     }
 
-    // 🔍 busca vinhos do usuário
+    // 🔍 buscar vinhos do usuário
     const { data, error } = await supabase
       .from('lista_adega00')
       .select('produto')
@@ -40,7 +44,7 @@ app.post('/harmonizar', async (req, res) => {
 
     const vinhos = data.map(v => v.produto).join(', ');
 
-    // 🤖 IA
+    // 🤖 chamada IA (Gemini)
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
@@ -51,7 +55,7 @@ app.post('/harmonizar', async (req, res) => {
             {
               parts: [
                 {
-                  text: `Tenho estes vinhos: ${vinhos}. Qual harmoniza melhor com ${prato}?`
+                  text: `Tenho estes vinhos: ${vinhos}. Qual harmoniza melhor com ${prato}? Seja direto e responda de forma breve e objetiva.`
                 }
               ]
             }
@@ -69,7 +73,8 @@ app.post('/harmonizar', async (req, res) => {
     res.json({ resposta: texto });
 
   } catch (err) {
-    console.error("ERRO:", err);
+    console.error("ERRO HARMONIZAÇÃO:", err);
+
     res.status(500).json({
       erro: "Erro na harmonização",
       detalhe: err.message
@@ -78,11 +83,15 @@ app.post('/harmonizar', async (req, res) => {
 });
 
 // =============================
+// 🧪 TESTE API
+// =============================
 app.get('/', (req, res) => {
   res.send("API Harmonização 🍷 rodando");
 });
 
 // =============================
+// 🚀 START
+// =============================
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Rodando na porta ${PORT}`);
+  console.log(`Servidor rodando na porta ${PORT}`);
 });
